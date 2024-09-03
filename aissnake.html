@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #333;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            border: 1px solid #fff;
+            background-color: #000;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const box = 20;
+        let snakes = [
+            { 
+                body: [{ x: 8 * box, y: 8 * box }],
+                direction: "RIGHT",
+                color: "green"
+            }
+        ];
+        let food = {
+            x: Math.floor(Math.random() * 19 + 1) * box,
+            y: Math.floor(Math.random() * 19 + 1) * box
+        };
+        let score = 0;
+
+        document.addEventListener("keydown", changeDirection);
+
+        function changeDirection(event) {
+            // Controls for Snake 1
+            if (event.keyCode === 37 && snakes[0].direction !== "RIGHT") {
+                snakes[0].direction = "LEFT";
+            } else if (event.keyCode === 38 && snakes[0].direction !== "DOWN") {
+                snakes[0].direction = "UP";
+            } else if (event.keyCode === 39 && snakes[0].direction !== "LEFT") {
+                snakes[0].direction = "RIGHT";
+            } else if (event.keyCode === 40 && snakes[0].direction !== "UP") {
+                snakes[0].direction = "DOWN";
+            }
+        }
+
+        function moveFood() {
+            const directions = [
+                { x: -box, y: 0 }, // left
+                { x: box, y: 0 },  // right
+                { x: 0, y: -box }, // up
+                { x: 0, y: box }   // down
+            ];
+
+            const randomDirection = directions[Math.floor(Math.random() * directions.length)];
+            food.x += randomDirection.x;
+            food.y += randomDirection.y;
+
+            if (food.x < 0) food.x = canvas.width - box;
+            if (food.y < 0) food.y = canvas.height - box;
+            if (food.x >= canvas.width) food.x = 0;
+            if (food.y >= canvas.height) food.y = 0;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            snakes.forEach(snake => {
+                // Draw the snake
+                for (let i = 0; i < snake.body.length; i++) {
+                    ctx.fillStyle = (i === 0) ? snake.color : "white";
+                    ctx.fillRect(snake.body[i].x, snake.body[i].y, box, box);
+                    ctx.strokeStyle = "black";
+                    ctx.strokeRect(snake.body[i].x, snake.body[i].y, box, box);
+                }
+            });
+
+            ctx.fillStyle = "red";
+            ctx.fillRect(food.x, food.y, box, box);
+
+            // Move and update all snakes
+            snakes.forEach(snake => {
+                let snakeX = snake.body[0].x;
+                let snakeY = snake.body[0].y;
+
+                if (snake.direction === "LEFT") snakeX -= box;
+                if (snake.direction === "UP") snakeY -= box;
+                if (snake.direction === "RIGHT") snakeX += box;
+                if (snake.direction === "DOWN") snakeY += box;
+
+                // Teleport the snake to the opposite side if it hits a wall
+                if (snakeX < 0) snakeX = canvas.width - box;
+                if (snakeY < 0) snakeY = canvas.height - box;
+                if (snakeX >= canvas.width) snakeX = 0;
+                if (snakeY >= canvas.height) snakeY = 0;
+
+                // Check collision with food for any part of the snake's body
+                let ateFood = false;
+                snake.body.forEach(part => {
+                    if (snakeX === part.x && snakeY === part.y) {
+                        ateFood = true;
+                    }
+                });
+
+                if (ateFood || (snakeX === food.x && snakeY === food.y)) {
+                    score++;
+                    snake.body.push({ x: snakeX, y: snakeY }); // Grow the snake
+                    food = {
+                        x: Math.floor(Math.random() * 19 + 1) * box,
+                        y: Math.floor(Math.random() * 19 + 1) * box
+                    };
+
+                    // Add a new snake each time food is eaten
+                    const colors = ["blue", "purple", "orange", "pink"];
+                    snakes.push({
+                        body: [{ x: Math.floor(Math.random() * canvas.width / box) * box, y: Math.floor(Math.random() * canvas.height / box) * box }],
+                        direction: ["LEFT", "UP", "RIGHT", "DOWN"][Math.floor(Math.random() * 4)],
+                        color: colors[snakes.length % colors.length]
+                    });
+                } else {
+                    snake.body.pop();
+                }
+
+                let newHead = { x: snakeX, y: snakeY };
+                snake.body.unshift(newHead);
+            });
+
+            // Draw the shared score
+            ctx.fillStyle = "white";
+            ctx.font = "20px Arial";
+            ctx.fillText(`Score: ${score}`, 10, 20);
+        }
+
+        function randomSnakeMovement() {
+            snakes.forEach(snake => {
+                if (snake !== snakes[0]) { // Avoid changing direction of the controlled snake
+                    const directions = ["LEFT", "UP", "RIGHT", "DOWN"];
+                    snake.direction = directions[Math.floor(Math.random() * directions.length)];
+                }
+            });
+        }
+
+        setInterval(draw, 100);
+        setInterval(moveFood, 500);
+        setInterval(randomSnakeMovement, 1000); // Update random movement every second
+    </script>
+</body>
+</html>
